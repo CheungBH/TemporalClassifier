@@ -2,7 +2,8 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
-from src.ConvLSTM.model import ConvLSTM
+from models.images.ConvLSTM import ConvLSTM
+from models.images.ConvGRU import ConvGRU
 from sklearn.model_selection import train_test_split
 from models.images.images_loader import ImagesLoader
 import sys
@@ -12,10 +13,27 @@ import numpy as np
 import os
 
 
-input_channels = config.kps_num
+input_channels = 34
 seq_length = 20
-log_interval = 20
-ConvLSTM_params = config.ConvLSTM_structure
+log_interval = 1
+
+ConvLSTM_structure = {1: [[128, 64, 64, 32, 32], (7, 7), False],
+                      # [hidden_channels, kernel_size, attention]
+                      2: [[128, 64, 64, 32, 32], (7, 7), True],
+                      3: [[128, 64, 64, 64, 32], (5, 5), True],
+                      4: [[128, 64, 32], (3, 3), True],
+                      5: [[128, 64, 32, 32, 32], (5, 5), True],
+                      6: [[128, 64, 32], (3, 3), False],
+                      7: [[128, 128, 128, 64, 32], (7, 7), False],
+                      8: [[128, 128, 128, 64, 32], (7, 7), True],
+                      9: [[128, 128, 128, 64, 32], (3, 3), True],
+                      10: [[128, 32], (3, 3), False],
+                      }
+
+ConvGRU_structure = {1: [[128, 64, 64, 32, 32], (5,5), False],
+                     2: [[128, 64, 64, 32, 32], (5,5), True],
+                     }
+
 device = "cpu"
 steps = 0
 
@@ -27,25 +45,45 @@ torch.manual_seed(1111)
 
 
 class ConvLSTMTrainer:
-    def __init__(self, data_path, epoch, dropout, lr, model_name, log_name, batch_size, n_classes, struct_num):
+    def __init__(self, data_path, epoch, dropout, lr, exp_folder, batch_size, n_classes, struct_num,
+                 temporal_module="ConvLSTM"):
         self.batch_size = batch_size
         self.epoch = epoch
-        [hidden_channel, kernel_size, attention] = ConvLSTM_params[struct_num]
-        self.model = ConvLSTM(input_size=(int(input_channels/2), 2),
-                         input_dim=1,
-                         hidden_dim=hidden_channel,
-                         kernel_size=kernel_size,
-                         num_layers=len(hidden_channel),
-                         num_classes=n_classes,
-                         batch_size=batch_size,
-                         batch_first=True,
-                         bias=True,
-                         return_all_layers=False,
-                         attention=attention)
+        os.makedirs(exp_folder, exist_ok=True)
+        self.name = os.path.join(exp_folder, "model.pth")
+        self.log = open(os.path.join(exp_folder, "result.txt"), 'w')
+
+        if temporal_module == "ConvLSTM":
+            [hidden_channel, kernel_size, attention] = ConvLSTM_structure[struct_num]
+            self.model = ConvLSTM(input_size=(int(input_channels/2), 2),
+                             input_dim=1,
+                             hidden_dim=hidden_channel,
+                             kernel_size=kernel_size,
+                             num_layers=len(hidden_channel),
+                             num_classes=n_classes,
+                             batch_size=batch_size,
+                             batch_first=True,
+                             bias=True,
+                             return_all_layers=False,
+                             attention=attention)
+        elif temporal_module == "ConvGRU":
+            [hidden_channel, kernel_size, attention] = ConvGRU_structure[struct_num]
+            self.model = ConvGRU(input_size=(int(input_channels / 2), 2),
+                                 input_dim=1,
+                                 hidden_dim=hidden_channel,
+                                 kernel_size=kernel_size,
+                                 num_layers=len(hidden_channel),
+                                 num_classes=n_classes,
+                                 batch_size=batch_size,
+                                 batch_first=True,
+                                 bias=True,
+                                 return_all_layers=False,
+                                 attention=attention)
+        else:
+            raise ValueError("temporal_module must be ConvLSTM or ConvGRU")
         if device != "cpu":
             self.model.cuda()
-        self.name = model_name
-        self.log = open(log_name, "w")
+
         self.criterion = nn.CrossEntropyLoss().to(device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
 
@@ -148,5 +186,6 @@ class ConvLSTMTrainer:
 
 
 if __name__ == '__main__':
-    ConvLSTMTrainer("input/input2/equal", 3, 0.05, 1e-4, "ConvLSTM_struct1_10-10-10-10-10-99.pth",
-                    "wtf.txt", 32, 2, 2).train_convlstm()
+    exp_path = "exp/ConvLSTM"
+    ConvLSTMTrainer("data/kps_data/input2/equal", 3, 0.05, 1e-4, exp_path,
+                    32, 2, 2).train_convlstm()

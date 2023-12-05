@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+device = "cpu"
 
 
 class SelfAttention(nn.Module):

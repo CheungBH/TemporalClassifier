@@ -5,7 +5,7 @@ from torch import nn
 import torch.utils.data as data
 from torch.utils.data import DataLoader
 
-# kps = config.kps_num
+kps = 34
 frm = 20
 
 
