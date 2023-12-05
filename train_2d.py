@@ -44,9 +44,9 @@ if device != "cpu":
 torch.manual_seed(1111)
 
 
-class ConvLSTMTrainer:
+class ImagesSequenceTrainer:
     def __init__(self, data_path, epoch, dropout, lr, exp_folder, batch_size, n_classes, struct_num,
-                 temporal_module="ConvLSTM"):
+                 temporal_module="ConvLSTM", load_model="", evaluate=False):
         self.batch_size = batch_size
         self.epoch = epoch
         os.makedirs(exp_folder, exist_ok=True)
@@ -96,6 +96,8 @@ class ConvLSTMTrainer:
         vaild_set = ImagesLoader(test_data, test_labels, n_classes)
         self.train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, drop_last=True)
         self.valid_loader = DataLoader(vaild_set, batch_size=batch_size, shuffle=True, drop_last=True)
+        self.evaluate = evaluate
+        assert not (self.evaluate and load_model == ""), "You must load model when you want to evaluate"
 
     def __load_data(self, root):
         with open(os.path.join(root, "data.txt"), "r") as data_f:
@@ -171,7 +173,13 @@ class ConvLSTMTrainer:
             self.log.write(out_log + "\n")
         return test_loss, 100. * correct / total
 
-    def train_convlstm(self):
+    def run(self):
+        if self.evaluate:
+            self.model.load_state_dict(torch.load(self.name))
+            self.model.eval()
+            test_loss, test_acc = self.__test()
+            return test_loss, test_acc
+
         min_val_loss, min_train_loss, max_val_acc = float("inf"), float("inf"), 0
         for epoch in range(1, self.epoch + 1):
             train_loss = self.__train(epoch)
@@ -186,6 +194,11 @@ class ConvLSTMTrainer:
 
 
 if __name__ == '__main__':
-    exp_path = "exp/ConvLSTM"
-    ConvLSTMTrainer("data/kps_data/input2/equal", 3, 0.05, 1e-4, exp_path,
-                    32, 2, 2).train_convlstm()
+    exp_path = "exp/ConvGRU"
+    temporal_module = "ConvGRU"
+    ImagesSequenceTrainer("data/kps_data/input2/equal", 3, 0.05, 1e-4, exp_path,
+                    32, 2, 2, temporal_module).run()
+    evaluate = True
+    model_path = os.path.join(exp_path, "model.pth")
+    ImagesSequenceTrainer("data/kps_data/input2/equal", 30, 0.05, 1e-4, exp_path, 8,
+                  2, 1, temporal_module, model_path, evaluate).run()
