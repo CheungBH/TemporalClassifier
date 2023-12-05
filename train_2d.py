@@ -196,9 +196,9 @@ class ImagesSequenceTrainer:
 if __name__ == '__main__':
     exp_path = "exp/ConvGRU"
     temporal_module = "ConvGRU"
-    ImagesSequenceTrainer("data/kps_data/input2/equal", 3, 0.05, 1e-4, exp_path,
+    ImagesSequenceTrainer("data/kps_data/input2/equal", 3, 0.05, 1e-2, exp_path,
                     32, 2, 2, temporal_module).run()
     evaluate = True
     model_path = os.path.join(exp_path, "model.pth")
-    ImagesSequenceTrainer("data/kps_data/input2/equal", 30, 0.05, 1e-4, exp_path, 8,
+    ImagesSequenceTrainer("data/kps_data/input2/equal", 30, 0.05, 1e-2, exp_path, 32,
                   2, 1, temporal_module, model_path, evaluate).run()
