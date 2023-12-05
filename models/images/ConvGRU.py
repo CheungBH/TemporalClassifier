@@ -97,7 +97,7 @@ class ConvGRUCell(nn.Module):
 
 
 class ConvGRU(nn.Module):
-    def __init__(self, input_size, input_dim, hidden_dim, kernel_size, num_layers, num_classes, batch_size,
+    def __init__(self, input_size, input_dim, hidden_dim, kernel_size, num_layers, num_classes,
                  batch_first=False, bias=True, return_all_layers=False, attention=None):
         """
 
@@ -136,7 +136,6 @@ class ConvGRU(nn.Module):
         self.kernel_size = kernel_size
         self.num_layers = num_layers
         self.num_classes = num_classes
-        self.batch_size = batch_size
         self.batch_first = batch_first
         self.bias = bias
         self.return_all_layers = return_all_layers

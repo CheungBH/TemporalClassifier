@@ -96,7 +96,7 @@ class ConvLSTMCell(nn.Module):
 class ConvLSTM(nn.Module):
 
     def __init__(self, input_size, input_dim, hidden_dim, kernel_size, num_layers, num_classes, batch_first=False,
-                 bias=True, return_all_layers=False, batch_size=1, attention=None):
+                 bias=True, return_all_layers=False, attention=None):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
@@ -114,7 +114,6 @@ class ConvLSTM(nn.Module):
         self.kernel_size = kernel_size
         self.num_layers = num_layers
         self.num_classes = num_classes
-        self.batch_size = batch_size
         self.batch_first = batch_first
         self.bias = bias
         self.return_all_layers = return_all_layers
