@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
-import torch.nn as nn
 from models.sequence.model_1d import TemporalSequenceModel
 from sklearn.model_selection import train_test_split
 from models.sequence.sequence_loader import Loader
@@ -33,7 +32,8 @@ class SequenceTemporalTrainer:
         self.batch_size = batch_size
         [hidden_dims, num_rnn_layers, attention] = temporal_structure[struct_num]
         self.model = TemporalSequenceModel(num_classes=n_classes, input_dim=input_channels, hidden_dims=hidden_dims,
-                            num_rnn_layers=num_rnn_layers, attention=attention, temporal_module=temporal_module)
+                                          num_rnn_layers=num_rnn_layers, attention=attention, temporal_module=temporal_module,
+                                           dropout=dropout, struct_num=struct_num)
         if device != 'cpu':
             self.model.cuda()
 
@@ -157,8 +157,8 @@ if __name__ == '__main__':
     log_interval = 5
     seq_length = 20
     device = "cpu"
-    temporal_module = "BiGRU" #[BiLSTM, LSTM, BiGRU, GRU]
-    exp_path = "exp/BiGRU"
+    temporal_module = "TCN" #[BiLSTM, LSTM, BiGRU, GRU, TCN]
+    exp_path = "exp/TCN"
     steps = 0
 
     SequenceTemporalTrainer("data/kps_data/input2/equal", 30, 0.05, 1e-4, 8,

@@ -1,10 +1,23 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .TCNsrc.model import TCN
 
+
+TCN_structure = {1:[[6, 6, 6, 6], 5, 2],
+                 # [channel_size, kernel_size, dilation]
+                 2: [[3, 4, 5, 6], 5, 4],
+                 3: [[6, 6, 6, 6], 7, 2],
+                 4: [[12, 12, 12, 12], 7, 2],
+                 5: [[8, 16, 8, 16], 7, 2],
+                 6: [[6, 6, 6, 6], 7, 4],
+                 7: [[6, 6, 6, 6], 7, 8],
+                 8: [[6, 6, 6, 6], 7, 1],
+                 }
 
 class TemporalSequenceModel(nn.Module):
-    def __init__(self, num_classes, input_dim, temporal_module, hidden_dims, num_rnn_layers, attention=None):
+    def __init__(self, num_classes, input_dim, temporal_module, hidden_dims, num_rnn_layers, attention=None,
+                 struct_num=1, dropout=0.1):
         super(TemporalSequenceModel, self).__init__()
         self.num_classes = num_classes
         self.hidden_dims = hidden_dims
@@ -12,7 +25,12 @@ class TemporalSequenceModel(nn.Module):
         self.rnn_layers = num_rnn_layers
         self.attention = attention
         self.temporal_module, self.Bi = self.tm_select(temporal_module)
-        self.build_model()
+        self.is_TCN = True if temporal_module == "TCN" else False
+        if not self.is_TCN:
+            self.build_model()
+        else:
+            [channel_size, kernel_size, dilation] = TCN_structure[struct_num]
+            self.model = TCN(input_dim, num_classes, channel_size, kernel_size=kernel_size, dropout=dropout, dilation=dilation)
 
     def tm_select(self, temporal_module):
         if temporal_module == 'BiLSTM':
@@ -23,6 +41,8 @@ class TemporalSequenceModel(nn.Module):
             return nn.GRU, False
         elif temporal_module == 'BiGRU':
             return nn.GRU, True
+        elif temporal_module == "TCN":
+            return TCN, False
         else:
             raise NotImplementedError
 
@@ -83,23 +103,27 @@ class TemporalSequenceModel(nn.Module):
         return result
 
     def forward(self, x):
+        if self.is_TCN:
+            x = x.permute(0, 2, 1)
+            return self.model(x)
         # if self.Bi:
-        if isinstance(self.lstm_net, nn.GRU) and self.Bi:
-            output, final_hidden_state = self.lstm_net(x)
         else:
-            output, (final_hidden_state, final_cell_state) = self.lstm_net(x)
-        # else:
-        #     output, final_hidden_state = self.lstm_net(x)
-        # output : [batch_size, len_seq, n_hidden * 2]
-        # final_hidden_state : [batch_size, num_layers * num_directions, n_hidden]
-        # final_hidden_state = final_hidden_state#.permute(1, 0, 2)
-        # final_hidden_state = torch.mean(final_hidden_state, dim=0, keepdim=True)
-        # atten_out = self.attention_net(output, final_hidden_state)
-        if self.attention:
-            atten_out = self.attention_net_with_w(output, final_hidden_state)
-            return self.atten_fc_out(atten_out)
-        else:
-            return self.fc_out(output[:,-1,:])
+            if isinstance(self.lstm_net, nn.GRU) and self.Bi:
+                output, final_hidden_state = self.lstm_net(x)
+            else:
+                output, (final_hidden_state, final_cell_state) = self.lstm_net(x)
+            # else:
+            #     output, final_hidden_state = self.lstm_net(x)
+            # output : [batch_size, len_seq, n_hidden * 2]
+            # final_hidden_state : [batch_size, num_layers * num_directions, n_hidden]
+            # final_hidden_state = final_hidden_state#.permute(1, 0, 2)
+            # final_hidden_state = torch.mean(final_hidden_state, dim=0, keepdim=True)
+            # atten_out = self.attention_net(output, final_hidden_state)
+            if self.attention:
+                atten_out = self.attention_net_with_w(output, final_hidden_state)
+                return self.atten_fc_out(atten_out)
+            else:
+                return self.fc_out(output[:,-1,:])
 
 
 if __name__ == '__main__':

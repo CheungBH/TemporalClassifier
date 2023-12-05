@@ -34,8 +34,8 @@ class SequenceTemporalPredictor:
 
 
 if __name__ == '__main__':
-    model_path = 'exp/BiLSTM/model.pth'
-    temporal_module = "BiLSTM"
+    model_path = 'exp/TCN/model.pth'
+    temporal_module = "TCN"
     data_path = "data/kps_data/input2/equal/data.txt"
     inps = np.loadtxt(data_path).astype(np.float32)
     prediction = SequenceTemporalPredictor(model_path, 2, struct_num=1, temporal_module=temporal_module)
