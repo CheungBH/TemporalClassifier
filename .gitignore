@@ -2,3 +2,4 @@ data/
 exp/
 .idea/
 .DS_Store
+__pycache__/
