@@ -3,7 +3,7 @@ from models.sequence.model_1d import TemporalSequenceModel
 import numpy as np
 
 device = "cpu"
-BiLSTM_structure = {1: [64, 2, False],
+temporal_structure = {1: [64, 2, False],
                     2: [64, 2, True],
                     }
 
@@ -14,7 +14,7 @@ frame_length = 20
 class SequenceTemporalPredictor:
     def __init__(self, model_name, n_classes, struct_num, temporal_module):
         # struct_num = int(model_name.split('/')[-1].split('_')[1][6:])
-        [hidden_dims, num_rnn_layers, attention] = BiLSTM_structure[struct_num]
+        [hidden_dims, num_rnn_layers, attention] = temporal_structure[struct_num]
         self.model = TemporalSequenceModel(num_classes=n_classes, input_dim=kps_num, hidden_dims=hidden_dims,
                             num_rnn_layers=num_rnn_layers, attention=attention, temporal_module=temporal_module)
         self.model.load_state_dict(torch.load(model_name))
